@@ -3,7 +3,7 @@
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" auto-complete="on" label-position="left">
 
       <div class="title-container">
-        <h3 class="title">Login Form</h3>
+        <h3 class="title">爱观影</h3>
       </div>
 
       <el-form-item prop="username">
@@ -173,6 +173,7 @@ $cursor: #fff;
 </style>
 
 <style lang="scss" scoped>
+//$bi:url('../../assets/img1.jpg');
 $bg:#2d3a4b;
 $dark_gray:#889aa4;
 $light_gray:#eee;
@@ -180,7 +181,10 @@ $light_gray:#eee;
 .login-container {
   min-height: 100%;
   width: 100%;
-  background-color: $bg;
+  //background-color: $bg;
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('../../assets/img1.jpg') no-repeat 0% 20%/cover;
+  background-size: cover;
+  //opacity: 50%;
   overflow: hidden;
 
   .login-form {
