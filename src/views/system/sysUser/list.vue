@@ -7,10 +7,6 @@
           <el-col :span="8">
             <el-form-item label="关 键 字">
               <el-input style="width: 200px" v-model="searchObj.keyword" placeholder="用户名/姓名/手机号码"></el-input>
-              <el-button style="margin-left: 10px" type="primary" icon="el-icon-search" size="mini"
-                         @click="fetchData()">搜索
-              </el-button>
-              <el-button icon="el-icon-refresh" size="mini" @click="resetData">重置</el-button>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -22,16 +18,21 @@
                 start-placeholder="开始时间"
                 end-placeholder="结束时间"
                 value-format="yyyy-MM-dd HH:mm:ss"
-                style="margin-right: 10px;width: 100%;"
               />
             </el-form-item>
           </el-col>
+<!--          <el-button  type="primary" icon="el-icon-search" size="mini"-->
+<!--                      @click="fetchData()">搜索-->
+<!--          </el-button>-->
+<!--          <el-button icon="el-icon-refresh" size="mini" @click="resetData">重置</el-button>-->
+          <!-- 将按钮进行封装-->
+          <my-select-and-reset-button :searchObj="searchObj" :fetchData="fetchData" :resetData="resetData"></my-select-and-reset-button>
         </el-row>
       </el-form>
     </div>
     <!-- 工具条 -->
     <div class="tools-div">
-      <el-button type="success" icon="el-icon-plus" size="mini" @click="add">添 加</el-button>
+      <el-button type="success" icon="el-icon-plus" size="mini" @click="add" :disabled="$hasBP('bnt.sysRole.add')  === false">添 加</el-button>
       <el-button type="danger" class="btn-add" icon="el-icon-delete-solid" size="mini"
                  @click="batchRemove()">批量删除
       </el-button>
@@ -73,6 +74,9 @@
                        title="修改"/>
             <el-button type="danger" icon="el-icon-delete" size="mini" @click="removeDataById(scope.row.id)"
                        title="删除"/>
+            <el-button type="warning" icon="el-icon-baseball" size="mini" @click="showAssignRole(scope.row)"
+                       title="分配角色"/>
+
           </template>
         </el-table-column>
       </el-table>
@@ -108,14 +112,39 @@
         <el-button type="primary" icon="el-icon-check" @click="saveOrUpdate()" size="small">确 定</el-button>
       </span>
     </el-dialog>
+    <!-- 分配角色对话框 -->
+    <el-dialog title="分配角色" :visible.sync="dialogRoleVisible">
+      <el-form label-width="80px">
+        <el-form-item label="用户名">
+          <el-input disabled :value="sysUser.username"></el-input>
+        </el-form-item>
+
+        <el-form-item label="角色列表">
+          <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选
+          </el-checkbox>
+          <div style="margin: 15px 0;"></div>
+          <el-checkbox-group v-model="userRoleIds" @change="handleCheckedChange">
+            <el-checkbox v-for="role in allRoles" :key="role.id" :label="role.id">{{ role.roleName }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button type="primary" @click="assignRole" size="small">保存</el-button>
+        <el-button @click="dialogRoleVisible = false" size="small">取消</el-button>
+      </div>
+    </el-dialog>
   </div>
 
 </template>
 
 <script>
 import api from '@/api/user/user.js'
+import roleApi from '@/api/role/role.js'
+import MySelectAndResetButton from "@/components/CustomTags/MySelectAndResetButton.vue"
+
 
 export default {
+  components: {MySelectAndResetButton},
   data() {
     return {
       listLoading: true, //  加载中的提示语.....
@@ -130,6 +159,11 @@ export default {
       dialogVisible: false, // 给个默认初始化值 隐藏弹框
       selectValueData: [], // 选中的数据
       saveBtnDisabled: false,
+      dialogRoleVisible: false,
+      allRoles: [], // 所有角色列表
+      userRoleIds: [], // 用户的角色ID的列表
+      isIndeterminate: false, // 不是全选也不是全不选
+      checkAll: false // 是否全选
     }
   },
   created() {
@@ -280,10 +314,61 @@ export default {
         this.fetchData()
       })
     },
+    // 展示分配角色
+    showAssignRole(row) {
+      this.sysUser = row
+      this.dialogRoleVisible = true
+      roleApi.getRolesByUserId(row.id).then(response => {
+        console.log(response.data)
+        this.allRoles = response.data.allRoles
+        this.userRoleIds = response.data.userRoleIds
+        this.checkAll = this.userRoleIds.length === this.allRoles.length
+        this.isIndeterminate = this.userRoleIds.length > 0 && this.userRoleIds.length < this.allRoles.length
+      })
+    },
+
+    /*
+    全选勾选状态发生改变的监听
+    */
+    handleCheckAllChange(value) { // value 当前勾选状态true/false
+      // 如果当前全选, userRoleIds就是所有角色id的数组, 否则是空数组
+      this.userRoleIds = value ? this.allRoles.map(item => item.id) : []
+      // 如果当前不是全选也不全不选时, 指定为false
+      this.isIndeterminate = false
+    },
+
+    /*
+    角色列表选中项发生改变的监听
+    */
+    handleCheckedChange(value) {
+      const {userRoleIds, allRoles} = this
+      this.checkAll = userRoleIds.length === allRoles.length && allRoles.length > 0
+      this.isIndeterminate = userRoleIds.length > 0 && userRoleIds.length < allRoles.length
+    },
+
+    // 分配角色
+    assignRole() {
+      const assginRoleVo = {
+        userId: this.sysUser.id,
+        roleIdList: this.userRoleIds
+      }
+      roleApi.assignRoles(assginRoleVo).then(response => {
+        this.$message.success(response.message || '分配角色成功')
+        this.dialogRoleVisible = false
+        this.fetchData(this.page)
+      })
+    },
+
   }
 }
 </script>
 
 <style>
 
+  .button-position{
+    position: fixed;
+    margin-left: 150px;
+    right: 500px;
+    top: 80px;
+  }
 </style>

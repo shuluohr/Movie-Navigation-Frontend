@@ -52,4 +52,20 @@ export default {
       data: ids // 传递的json格式
     })
   },
+  // 根据用户id查询用户已分配的角色
+  getRolesByUserId(userId) {
+    return request({
+      url: `${BASE_URL}/toAssign/${userId}`,
+      method: 'get'
+    })
+  },
+
+  // 分配角色
+  assignRoles(assginRoleVo) {
+    return request({
+      url: `${BASE_URL}/doAssign`,
+      method: 'post',
+      data: assginRoleVo
+    })
+  }
 }

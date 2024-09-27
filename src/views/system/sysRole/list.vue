@@ -18,8 +18,9 @@
     </div>
     <!-- 工具条 -->
     <div class="tools-div">
-      <el-button type="success" icon="el-icon-plus" size="mini" @click="add">添 加</el-button>
-      <el-button type="danger" class="btn-add" icon="el-icon-delete-solid" size="mini" @click="batchRemove()">批量删除</el-button>
+      <el-button type="success" icon="el-icon-plus" size="mini" @click="add" :disabled="$hasBP('bnt.sysRole.add')  === false">添 加</el-button>
+      <el-button type="danger" class="btn-add" icon="el-icon-delete-solid" size="mini" @click="batchRemove()">批量删除
+      </el-button>
       <!-- 表格 -->
       <el-table
         v-loading="listLoading"
@@ -47,6 +48,8 @@
             <el-button type="primary" icon="el-icon-edit" size="mini" @click="edit(scope.row.id)" title="修改"/>
             <el-button type="danger" icon="el-icon-delete" size="mini" @click="removeDataById(scope.row.id)"
                        title="删除"/>
+            <el-button type="warning" icon="el-icon-baseball" size="mini" @click="showAssignAuth(scope.row)"
+                       title="分配权限"/>
           </template>
         </el-table-column>
       </el-table>
@@ -165,9 +168,9 @@ export default {
     },
     // 根据id去回显数据
     edit(id) {
-      //1.弹框
+      // 1.弹框
       this.dialogVisible = true
-      //2.赋值
+      // 2.赋值
       api.getRoleById(id)
         .then(response => {
           this.sysRole = response.data
@@ -225,6 +228,16 @@ export default {
     handleSelectionChange(selectValue) {
       this.selectValueData = selectValue
     },
+    showAssignAuth(row) {
+      // this.$router.push('/system/sysRole/assignAuth?id=' + row.id + '&roleName=' + row.roleName)
+      this.$router.push({
+        path: '/system/assignAuth',
+        query: {
+          id: row.id,
+          roleName: row.roleName
+        }
+      })
+    }
   }
 }
 </script>
